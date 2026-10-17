@@ -1,79 +1,66 @@
-# 🌐 Universal Browser Extension Auto-Installer (Additive Only)
+# 🧩 My Browser Extensions
 
-Automate adding your browser extensions into **any PC** (Windows, macOS, Linux) for **a specific browser of your choice** (Brave, Google Chrome, Microsoft Edge, Vivaldi, or Opera).
-
----
-
-## 🛡️ Safe & Additive Installation Guarantee
-- **Existing extensions are ALWAYS SKIPPED:** It checks what extensions are already in your browser first. If an extension is already installed, it leaves it alone.
-- **Only MISSING extensions are installed.**
-- **Zero Deletion:** It **never** uninstalls, overwrites, or removes any of your existing extensions, bookmarks, passwords, or browsing data.
+A curated collection of the browser extensions I use in Brave, with direct links to install them from the Chrome Web Store on any new browser or PC.
 
 ---
 
-## ⚡ 1-Command Installation on a New PC
+## 🛡️ Ad Blocking & Privacy
 
-Specify your browser directly in the terminal command:
-
-### 🪟 Windows (PowerShell)
-
-```powershell
-# For Brave:
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Brave
-
-# For Google Chrome:
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Chrome
-
-# For Microsoft Edge:
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Edge
-```
-
-*Or run interactively (it will ask you which browser you want to add extensions into):*
-```powershell
-irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1 | iex
-```
-
----
-
-### 🍎 macOS / 🐧 Linux (Terminal)
-
-```bash
-# For Brave:
-curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash -s -- --browser brave
-
-# For Chrome:
-curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash -s -- --browser chrome
-```
-
-*Or run interactively:*
-```bash
-curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash
-```
-
----
-
-## 📁 Repository Files
-
-| File | Target OS | Description |
+| Extension | Chrome Web Store Link | Description |
 | :--- | :--- | :--- |
-| [`extensions.json`](extensions.json) | Any | Unified list of your extension IDs, names, and store URLs. |
-| [`install.ps1`](install.ps1) | Windows | Checks installed extensions, skips existing ones, and installs missing ones. |
-| [`install.sh`](install.sh) | macOS / Linux | Mac/Linux equivalent: additive install for missing extensions only. |
-| [`export.ps1`](export.ps1) | Windows | Scans your browser and adds any newly discovered extensions to `extensions.json`. |
-| [`export.sh`](export.sh) | macOS / Linux | Mac/Linux equivalent for exporting newly added extensions. |
-| [`README.md`](README.md) | Any | Documentation. |
+| **AdBlock** | [Install from Web Store](https://chromewebstore.google.com/detail/gighmmpiobklfepjocnamgkkbiglidom) | Block ads and popups across the web |
+| **Blockify** | [Install from Web Store](https://chromewebstore.google.com/detail/nfmlkliedggdodlbgghmmchhgckjoaml) | Ad blocker for Spotify web player, YouTube, and more |
 
 ---
 
-## 🔄 Keeping Your List Updated
+## 📺 YouTube Enhancements
 
-When you install a new extension on your main PC that you want included:
+| Extension | Chrome Web Store Link | Description |
+| :--- | :--- | :--- |
+| **Return YouTube Dislike** | [Install from Web Store](https://chromewebstore.google.com/detail/gebbhagfogifgggkldgodflihgfeippi) | Restores the ability to see dislikes on YouTube |
+| **Unhook** | [Install from Web Store](https://chromewebstore.google.com/detail/khncfooichmfjbepaaaebmommgaepoid) | Remove YouTube recommended feed, shorts, and distractions |
+| **YouTube Quality ShortCut** | [Install from Web Store](https://chromewebstore.google.com/detail/idcemhhjdleodchiihagkfehahofmibc) | Fast toggle for YouTube playback quality |
+
+---
+
+## 🎵 Media & Audio
+
+| Extension | Chrome Web Store Link | Description |
+| :--- | :--- | :--- |
+| **Volume Master** | [Install from Web Store](https://chromewebstore.google.com/detail/jghecgabfgfdldnmbfkhmffcabddioke) | Up to 600% volume boost for individual tabs |
+| **Video Speed Controller** | [Install from Web Store](https://chromewebstore.google.com/detail/nffaoalbilbmmfgbnbgppjihopabppdk) | Speed up, slow down, advance and rewind HTML5 videos |
+| **Transpose** | [Install from Web Store](https://chromewebstore.google.com/detail/ioimlbgefgadofblnajllknopjboejda) | Real-time pitch shifter, speed adjuster, and audio looper |
+| **Shazam** | [Install from Web Store](https://chromewebstore.google.com/detail/mmioliijnhnoblpgimnlajmefafdfilb) | Identify any music playing in your browser |
+
+---
+
+## 🛠️ Productivity & Utilities
+
+| Extension | Chrome Web Store Link | Description |
+| :--- | :--- | :--- |
+| **Raindrop.io** | [Install from Web Store](https://chromewebstore.google.com/detail/ldgfbffkinooeloadekpmfoklnobpien) | All-in-one bookmark manager |
+| **GoFullPage** | [Install from Web Store](https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl) | 1-click full page screenshot capture |
+| **Adobe Acrobat** | [Install from Web Store](https://chromewebstore.google.com/detail/efaidnbmnnnibpcajpcglclefindmkaj) | PDF edit, convert, and sign tools |
+| **Save as PDF** | [Install from Web Store](https://chromewebstore.google.com/detail/kpdjmbiefanbdgnkcikhllpmjnnllbbc) | Convert any web page to PDF |
+| **Developer Notes** | [Install from Web Store](https://chromewebstore.google.com/detail/fchdfdnnpkphopmdaochdfnmcahndmnb) | Quick in-browser notes for developers |
+| **Open Link In Another Window** | [Install from Web Store](https://chromewebstore.google.com/detail/oocalbipljegheefhdjlglmimnigimjk) | Forces links to open in a separate window |
+| **SteamDB** | [Install from Web Store](https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon) | Adds pricing history and stats to the Steam Store |
+
+---
+
+## ⚡ Quick 1-Click Opener (Optional)
+
+If you're on a fresh PC and want to open all 16 store pages at once in tabs:
+
+- **Windows:** Double-click [`open_all.bat`](open_all.bat) (or run `./open_all.bat` in terminal).
+- **macOS / Linux:** Run `./open_all.sh` in terminal.
+
+---
+
+## 🔄 Updating This List
+
+To scan Brave and refresh `extensions.json` whenever you add new extensions:
 
 ```powershell
-# 1. Export newly installed extensions
-.\export.ps1 -Browser Brave
-
-# 2. Commit to Git (when ready to push)
-git commit -am "Added new extension"
-# git push
+.\export.ps1
 ```
