@@ -286,5 +286,16 @@ foreach ($hive in $hives) {
     }
 }
 
+# For Google Chrome on non-domain Windows machines, also register via External Extensions
+if ($target.Key -eq "Chrome") {
+    foreach ($ext in $missing) {
+        $extKeyPath = "HKCU:\Software\Google\Chrome\Extensions\$($ext.id)"
+        if (-not (Test-Path $extKeyPath)) {
+            New-Item -Path $extKeyPath -Force | Out-Null
+        }
+        Set-ItemProperty -Path $extKeyPath -Name "update_url" -Value $updateUrl -Force | Out-Null
+    }
+}
+
 Write-Host "[SUCCESS] Added $($missing.Count) missing extensions to $($target.Name)!" -ForegroundColor Green
 Write-Host "When you launch $($target.Name), the missing extensions will automatically download." -ForegroundColor Yellow
