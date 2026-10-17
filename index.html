@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Browser Extensions - 1-Click Installer</title>
+  <title>My Browser Extensions - 1-Click Launcher</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -14,6 +14,9 @@
       --primary: #238636;
       --primary-hover: #2ea043;
       --link: #58a6ff;
+      --warning-bg: #382713;
+      --warning-border: #9e6a03;
+      --warning-text: #f0883e;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -33,7 +36,7 @@
       margin-top: 0;
       margin-bottom: 2rem;
     }
-    .hero-btn-container {
+    .hero-container {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -50,24 +53,67 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.2s;
     }
     .btn:hover {
       background-color: var(--primary-hover);
+      transform: translateY(-1px);
     }
-    .notice {
+    .btn:active {
+      transform: translateY(0);
+    }
+    .btn-secondary {
+      background-color: #21262d;
+      border: 1px solid var(--border);
+      color: var(--text);
       font-size: 0.85rem;
-      color: #8b949e;
-      margin-top: 0.75rem;
+      font-weight: 500;
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 0.5rem;
     }
-    .category {
-      margin-top: 2rem;
-    }
-    .category h2 {
+    .btn-secondary:hover {
+      background-color: #30363d;
       color: var(--heading);
+    }
+    .alert-box {
+      display: none;
+      background-color: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: 6px;
+      padding: 1.25rem;
+      margin: 1.25rem auto 0;
+      text-align: left;
+      color: #e6edf3;
+      max-width: 650px;
+    }
+    .alert-box h3 {
+      margin: 0 0 0.5rem 0;
+      color: var(--warning-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .alert-box ol {
+      margin: 0.5rem 0 0 1.25rem;
+      padding: 0;
+    }
+    .alert-box li {
+      margin-bottom: 0.35rem;
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.5rem;
-      font-size: 1.25rem;
+      margin-top: 2rem;
+    }
+    .category-header h2 {
+      color: var(--heading);
+      margin: 0;
+      font-size: 1.2rem;
     }
     .grid {
       display: grid;
@@ -104,17 +150,51 @@
     .card a:hover {
       text-decoration: underline;
     }
+    .bookmarklet-box {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px dashed var(--border);
+      font-size: 0.9rem;
+      color: #8b949e;
+    }
+    .bookmarklet-btn {
+      display: inline-block;
+      margin-top: 0.5rem;
+      background: #1f242c;
+      border: 1px dashed #58a6ff;
+      color: #58a6ff;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.85rem;
+      cursor: grab;
+    }
   </style>
 </head>
 <body>
 
   <h1>🧩 My Browser Extensions</h1>
-  <p class="subtitle">Quick 1-click launcher to open all extensions in Chrome Web Store tabs.</p>
+  <p class="subtitle">Quick launcher to open all extensions in Chrome Web Store tabs.</p>
 
-  <div class="hero-btn-container">
-    <button class="btn" onclick="openAll()">🚀 Open All 16 Extensions in Tabs</button>
-    <div class="notice">
-      ⚠️ <strong>First time note:</strong> Your browser may show a small <em>"Pop-ups blocked"</em> icon in the address bar. Click it and select <strong>"Always allow pop-ups"</strong> to let all tabs open.
+  <div class="hero-container">
+    <button id="open-all-btn" class="btn" onclick="openExtensions(extensions)">🚀 Open All 16 Extensions in Tabs</button>
+
+    <!-- Pop-up blocked guide (shown automatically if browser blocks multiple tabs) -->
+    <div id="popup-alert" class="alert-box">
+      <h3>⚠️ Pop-ups were blocked by your browser</h3>
+      <p>Browsers (especially Brave and Chrome) block websites from opening 16 tabs at once unless you give permission:</p>
+      <ol>
+        <li>Look at the <strong>right side of your address bar</strong> (or click the <strong>Shield icon</strong> in Brave).</li>
+        <li>Click the icon with a red cross: <strong>"Pop-ups blocked"</strong>.</li>
+        <li>Select <strong>"Always allow pop-ups and redirects from this site"</strong> and click <strong>Done</strong>.</li>
+        <li>Click the green button again — all 16 tabs will open!</li>
+      </ol>
+    </div>
+
+    <div class="bookmarklet-box">
+      💡 <em>Pro-tip: Bypass pop-up blocker completely by dragging this to your Bookmarks Bar:</em><br>
+      <a class="bookmarklet-btn" href="javascript:(function(){const urls=['https://chromewebstore.google.com/detail/gighmmpiobklfepjocnamgkkbiglidom','https://chromewebstore.google.com/detail/efaidnbmnnnibpcajpcglclefindmkaj','https://chromewebstore.google.com/detail/nfmlkliedggdodlbgghmmchhgckjoaml','https://chromewebstore.google.com/detail/fchdfdnnpkphopmdaochdfnmcahndmnb','https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl','https://chromewebstore.google.com/detail/oocalbipljegheefhdjlglmimnigimjk','https://chromewebstore.google.com/detail/ldgfbffkinooeloadekpmfoklnobpien','https://chromewebstore.google.com/detail/gebbhagfogifgggkldgodflihgfeippi','https://chromewebstore.google.com/detail/kpdjmbiefanbdgnkcikhllpmjnnllbbc','https://chromewebstore.google.com/detail/mmioliijnhnoblpgimnlajmefafdfilb','https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon','https://chromewebstore.google.com/detail/ioimlbgefgadofblnajllknopjboejda','https://chromewebstore.google.com/detail/khncfooichmfjbepaaaebmommgaepoid','https://chromewebstore.google.com/detail/nffaoalbilbmmfgbnbgppjihopabppdk','https://chromewebstore.google.com/detail/jghecgabfgfdldnmbfkhmffcabddioke','https://chromewebstore.google.com/detail/idcemhhjdleodchiihagkfehahofmibc'];urls.forEach((u,i)=>setTimeout(()=>window.open(u,'_blank'),i*80));})();">⭐ Open All Extensions (Bookmarklet)</a>
     </div>
   </div>
 
@@ -147,23 +227,62 @@
       { category: "🛠️ Productivity & Utilities", name: "SteamDB", desc: "Adds pricing history, concurrent player stats, and database links to Steam", url: "https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon" }
     ];
 
-    function openAll() {
-      extensions.forEach(ext => {
-        window.open(ext.url, '_blank');
-      });
+    function openExtensions(list) {
+      const btn = document.getElementById('open-all-btn');
+      const alertBox = document.getElementById('popup-alert');
+      alertBox.style.display = 'none';
+
+      // Test opening the first tab
+      const first = window.open(list[0].url, '_blank');
+      if (!first || first.closed || typeof first.closed === 'undefined') {
+        // Popups are blocked by browser!
+        alertBox.style.display = 'block';
+        return;
+      }
+
+      let count = 1;
+      btn.innerText = `Opening (1/${list.length})...`;
+
+      // Stagger remaining openings slightly so browser queue doesn't reject them
+      for (let i = 1; i < list.length; i++) {
+        setTimeout(() => {
+          const w = window.open(list[i].url, '_blank');
+          if (!w) {
+            alertBox.style.display = 'block';
+          }
+          count++;
+          btn.innerText = `Opening (${count}/${list.length})...`;
+          if (count === list.length) {
+            btn.innerText = `✅ All ${list.length} Tabs Opened!`;
+            setTimeout(() => {
+              btn.innerText = `🚀 Open All 16 Extensions in Tabs`;
+            }, 3000);
+          }
+        }, i * 100);
+      }
     }
 
-    // Render Cards
+    // Render Categories & Cards
     const categories = [...new Set(extensions.map(e => e.category))];
     const container = document.getElementById('content');
 
     categories.forEach(cat => {
+      const catItems = extensions.filter(e => e.category === cat);
       const section = document.createElement('div');
       section.className = 'category';
-      section.innerHTML = `<h2>${cat}</h2><div class="grid"></div>`;
-      const grid = section.querySelector('.grid');
 
-      extensions.filter(e => e.category === cat).forEach(ext => {
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = `
+        <h2>${cat}</h2>
+        <button class="btn-secondary" onclick='openCategory("${cat.replace(/"/g, '\\"')}")'>Open ${catItems.length} Tabs</button>
+      `;
+      section.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+
+      catItems.forEach(ext => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -174,8 +293,14 @@
         grid.appendChild(card);
       });
 
+      section.appendChild(grid);
       container.appendChild(section);
     });
+
+    function openCategory(catName) {
+      const items = extensions.filter(e => e.category === catName);
+      openExtensions(items);
+    }
   </script>
 
 </body>
