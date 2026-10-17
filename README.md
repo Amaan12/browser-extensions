@@ -2,7 +2,8 @@
 
 A curated collection of the browser extensions I use in Brave, with direct links to install them from the Chrome Web Store.
 
-> 🌐 **Live Web App:** Once pushed to GitHub, enable **GitHub Pages** in your repo settings to access the 1-Click Launcher at `https://<YOUR_USERNAME>.github.io/<REPO>/` to open all 16 tabs at once with a single click.
+> 🌐 **Live 1-Click Launcher:** [https://amaan12.github.io/browser-extensions/](https://amaan12.github.io/browser-extensions/)  
+> *(Click the link to open all 16 extensions at once in tabs)*
 
 ---
 
