@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Browser Extensions - 1-Click Installer</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --heading: #f0f6fc;
+      --primary: #238636;
+      --primary-hover: #2ea043;
+      --link: #58a6ff;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+      line-height: 1.5;
+    }
+    h1 {
+      color: var(--heading);
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #8b949e;
+      margin-top: 0;
+      margin-bottom: 2rem;
+    }
+    .hero-btn-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      font-size: 1.15rem;
+      font-weight: 600;
+      padding: 0.85rem 1.75rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+    .notice {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-top: 0.75rem;
+    }
+    .category {
+      margin-top: 2rem;
+    }
+    .category h2 {
+      color: var(--heading);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      font-size: 1.25rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      color: var(--heading);
+    }
+    .card p {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin: 0 0 1rem 0;
+      flex-grow: 1;
+    }
+    .card a {
+      color: var(--link);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .card a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧩 My Browser Extensions</h1>
+  <p class="subtitle">Quick 1-click launcher to open all extensions in Chrome Web Store tabs.</p>
+
+  <div class="hero-btn-container">
+    <button class="btn" onclick="openAll()">🚀 Open All 16 Extensions in Tabs</button>
+    <div class="notice">
+      ⚠️ <strong>First time note:</strong> Your browser may show a small <em>"Pop-ups blocked"</em> icon in the address bar. Click it and select <strong>"Always allow pop-ups"</strong> to let all tabs open.
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <script>
+    const extensions = [
+      // Ad Blocking & Privacy
+      { category: "🛡️ Ad Blocking & Privacy", name: "AdBlock", desc: "Blocks ads, banners, and popups across the web", url: "https://chromewebstore.google.com/detail/gighmmpiobklfepjocnamgkkbiglidom" },
+      { category: "🛡️ Ad Blocking & Privacy", name: "Blockify", desc: "Ad blocker for Spotify web player, YouTube, and more", url: "https://chromewebstore.google.com/detail/nfmlkliedggdodlbgghmmchhgckjoaml" },
+
+      // YouTube Enhancements
+      { category: "📺 YouTube Enhancements", name: "Return YouTube Dislike", desc: "Restores the ability to see dislike counts on YouTube", url: "https://chromewebstore.google.com/detail/gebbhagfogifgggkldgodflihgfeippi" },
+      { category: "📺 YouTube Enhancements", name: "Unhook", desc: "Removes YouTube homepage recommendations, shorts, and sidebar distractions", url: "https://chromewebstore.google.com/detail/khncfooichmfjbepaaaebmommgaepoid" },
+      { category: "📺 YouTube Enhancements", name: "YouTube Quality ShortCut", desc: "Fast 1-click toggle for video playback quality", url: "https://chromewebstore.google.com/detail/idcemhhjdleodchiihagkfehahofmibc" },
+
+      // Media & Audio
+      { category: "🎵 Media & Audio", name: "Volume Master", desc: "Up to 600% volume boost for individual browser tabs", url: "https://chromewebstore.google.com/detail/jghecgabfgfdldnmbfkhmffcabddioke" },
+      { category: "🎵 Media & Audio", name: "Video Speed Controller", desc: "Speed up, slow down, and advance HTML5 videos with keyboard shortcuts", url: "https://chromewebstore.google.com/detail/nffaoalbilbmmfgbnbgppjihopabppdk" },
+      { category: "🎵 Media & Audio", name: "Transpose", desc: "Real-time pitch shifter, speed adjuster, and audio looper", url: "https://chromewebstore.google.com/detail/ioimlbgefgadofblnajllknopjboejda" },
+      { category: "🎵 Media & Audio", name: "Shazam", desc: "Identify any music or song playing in your browser", url: "https://chromewebstore.google.com/detail/mmioliijnhnoblpgimnlajmefafdfilb" },
+
+      // Productivity & Utilities
+      { category: "🛠️ Productivity & Utilities", name: "Raindrop.io", desc: "All-in-one bookmark manager with tagging and cloud sync", url: "https://chromewebstore.google.com/detail/ldgfbffkinooeloadekpmfoklnobpien" },
+      { category: "🛠️ Productivity & Utilities", name: "GoFullPage", desc: "1-click full page scrolling screenshot capture to PNG/PDF", url: "https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl" },
+      { category: "🛠️ Productivity & Utilities", name: "Adobe Acrobat", desc: "PDF viewing, editing, converting, and commenting tools", url: "https://chromewebstore.google.com/detail/efaidnbmnnnibpcajpcglclefindmkaj" },
+      { category: "🛠️ Productivity & Utilities", name: "Save as PDF", desc: "Clean conversion of web pages directly into PDF documents", url: "https://chromewebstore.google.com/detail/kpdjmbiefanbdgnkcikhllpmjnnllbbc" },
+      { category: "🛠️ Productivity & Utilities", name: "Developer Notes", desc: "Quick in-browser scratchpad and note-taking tool", url: "https://chromewebstore.google.com/detail/fchdfdnnpkphopmdaochdfnmcahndmnb" },
+      { category: "🛠️ Productivity & Utilities", name: "Open Link In Another Window", desc: "Forces designated links to open in a separate window", url: "https://chromewebstore.google.com/detail/oocalbipljegheefhdjlglmimnigimjk" },
+      { category: "🛠️ Productivity & Utilities", name: "SteamDB", desc: "Adds pricing history, concurrent player stats, and database links to Steam", url: "https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon" }
+    ];
+
+    function openAll() {
+      extensions.forEach(ext => {
+        window.open(ext.url, '_blank');
+      });
+    }
+
+    // Render Cards
+    const categories = [...new Set(extensions.map(e => e.category))];
+    const container = document.getElementById('content');
+
+    categories.forEach(cat => {
+      const section = document.createElement('div');
+      section.className = 'category';
+      section.innerHTML = `<h2>${cat}</h2><div class="grid"></div>`;
+      const grid = section.querySelector('.grid');
+
+      extensions.filter(e => e.category === cat).forEach(ext => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>${ext.name}</h3>
+          <p>${ext.desc}</p>
+          <a href="${ext.url}" target="_blank" rel="noopener">Install on Web Store ↗</a>
+        `;
+        grid.appendChild(card);
+      });
+
+      container.appendChild(section);
+    });
+  </script>
+
+</body>
+</html>
