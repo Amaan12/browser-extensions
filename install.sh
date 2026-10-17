@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Universal Browser Extension Installer for macOS and Linux
-# Installs extensions into a single chosen browser (Brave, Chrome, Edge, Chromium, Vivaldi)
+# Smart Additive Browser Extension Installer for macOS and Linux
+# - Compares against existing extensions in the browser profile
+# - Automatically SKIPS extensions that are already present
+# - ONLY installs missing extensions
 
 set -e
 
@@ -33,7 +35,6 @@ if [[ -z "$TARGET_BROWSER" ]]; then
     TARGET_BROWSER="${SUPPORTED[$IDX]}"
 fi
 
-# Normalize case
 MATCHED=""
 for b in "${SUPPORTED[@]}"; do
     if [[ "${b,,}" == "${TARGET_BROWSER,,}" ]]; then
@@ -49,7 +50,7 @@ fi
 TARGET_BROWSER="$MATCHED"
 echo -e "\033[0;32mTarget Browser: $TARGET_BROWSER\033[0m\n"
 
-# --- 2. Resolve Extension Data ---
+# --- 2. Load Extension List from JSON ---
 if [[ -f "$JSON_FILE" ]]; then
     EXT_DATA=$(cat "$JSON_FILE")
 elif [[ "$JSON_FILE" =~ ^https?:// ]]; then
@@ -69,33 +70,99 @@ else
     fi
 fi
 
-EXT_IDS=()
-EXT_NAMES=()
-EXT_URLS=()
-
-if command -v python3 >/dev/null 2>&1; then
-    while IFS="|" read -r id name url; do
-        EXT_IDS+=("$id")
-        EXT_NAMES+=("$name")
-        EXT_URLS+=("$url")
-    done < <(python3 -c "
-import json, sys
-data = json.loads('''$EXT_DATA''')
-for item in data:
-    print(f\"{item.get('id', '')}|{item.get('name', '')}|{item.get('url', '')}\")
-")
-else
-    while IFS= read -r line; do
-        id=$(echo "$line" | sed -n 's/.*"id": *"\([^"]*\)".*/\1/p')
-        [[ -n "$id" ]] && EXT_IDS+=("$id")
-    done <<< "$EXT_DATA"
+# --- 3. Find Profile & Filter Already-Installed Extensions ---
+PROFILE_PATH=""
+if [[ "$OS" == "Darwin" ]]; then
+    declare -A MAC_PROFILES=(
+        ["Brave"]="$HOME/Library/Application Support/BraveSoftware/Brave-Browser/Default"
+        ["Chrome"]="$HOME/Library/Application Support/Google/Chrome/Default"
+        ["Edge"]="$HOME/Library/Application Support/Microsoft Edge/Default"
+        ["Chromium"]="$HOME/Library/Application Support/Chromium/Default"
+        ["Vivaldi"]="$HOME/Library/Application Support/Vivaldi/Default"
+    )
+    PROFILE_PATH="${MAC_PROFILES[$TARGET_BROWSER]}"
+elif [[ "$OS" == "Linux" ]]; then
+    declare -A LINUX_PROFILES=(
+        ["Brave"]="$HOME/.config/BraveSoftware/Brave-Browser/Default"
+        ["Chrome"]="$HOME/.config/google-chrome/Default"
+        ["Edge"]="$HOME/.config/microsoft-edge/Default"
+        ["Chromium"]="$HOME/.config/chromium/Default"
+        ["Vivaldi"]="$HOME/.config/vivaldi/Default"
+    )
+    PROFILE_PATH="${LINUX_PROFILES[$TARGET_BROWSER]}"
 fi
 
-echo -e "\033[0;32mLoaded ${#EXT_IDS[@]} extensions to install.\033[0m"
+# Differential check via Python
+DIFF_OUTPUT=$(python3 -c "
+import json, os, sys
+
+ext_data = json.loads('''$EXT_DATA''')
+installed_ids = set()
+
+profile_dir = '$PROFILE_PATH'
+pref_files = [os.path.join(profile_dir, 'Secure Preferences'), os.path.join(profile_dir, 'Preferences')]
+
+for pf in pref_files:
+    if os.path.exists(pf):
+        try:
+            with open(pf, 'r', encoding='utf-8') as f:
+                d = json.load(f)
+                installed_ids.update(d.get('extensions', {}).get('settings', {}).keys())
+        except Exception:
+            pass
+
+ext_dir = os.path.join(profile_dir, 'Extensions')
+if os.path.exists(ext_dir):
+    for name in os.listdir(ext_dir):
+        if os.path.isdir(os.path.join(ext_dir, name)):
+            installed_ids.add(name)
+
+missing = []
+present = []
+
+for item in ext_data:
+    eid = item.get('id', '')
+    if eid in installed_ids:
+        present.append(item.get('name', eid))
+    else:
+        missing.append(item)
+
+print(json.dumps({'missing': missing, 'present': present}))
+" 2>/dev/null || echo '{"missing": [], "present": []}')
+
+# Parse diff output
+MISSING_COUNT=$(python3 -c "import json; d=json.loads('''$DIFF_OUTPUT'''); print(len(d['missing']))" 2>/dev/null || echo "0")
+PRESENT_COUNT=$(python3 -c "import json; d=json.loads('''$DIFF_OUTPUT'''); print(len(d['present']))" 2>/dev/null || echo "0")
+
+if [[ "$PRESENT_COUNT" -gt 0 ]]; then
+    echo -e "\033[0;90m[SKIPPED] Already installed in $TARGET_BROWSER ($PRESENT_COUNT extensions)\033[0m"
+fi
+
+if [[ "$MISSING_COUNT" -eq 0 && "$PRESENT_COUNT" -gt 0 ]]; then
+    echo -e "\033[0;32m[ALL SET] All extensions are already installed in $TARGET_BROWSER! Nothing to do.\033[0m"
+    exit 0
+fi
+
+echo -e "\033[0;36m[TO INSTALL] Missing extensions ($MISSING_COUNT):\033[0m"
+
+MISSING_IDS=()
+MISSING_URLS=()
+while IFS="|" read -r id url name; do
+    if [[ -n "$id" ]]; then
+        MISSING_IDS+=("$id")
+        MISSING_URLS+=("$url")
+        echo -e " \033[0;32m+ $name ($id)\033[0m"
+    fi
+done < <(python3 -c "
+import json
+d = json.loads('''$DIFF_OUTPUT''')
+for item in d['missing']:
+    print(f\"{item.get('id')}|{item.get('url')}|{item.get('name')}\")
+")
 
 UPDATE_URL="https://clients2.google.com/service/update2/crx"
 
-# --- 3. Execute Installation for Selected Browser ---
+# --- 4. Install Missing Extensions ---
 if [[ "$OS" == "Darwin" ]]; then
     declare -A MAC_BUNDLES=(
         ["Brave"]="com.brave.Browser"
@@ -108,15 +175,15 @@ if [[ "$OS" == "Darwin" ]]; then
 
     if [[ "$OPEN_TABS" == true ]]; then
         echo "Opening tabs in $TARGET_BROWSER..."
-        open -a "$TARGET_BROWSER" "${EXT_URLS[@]}" || true
+        open -a "$TARGET_BROWSER" "${MISSING_URLS[@]}" || true
     else
-        echo "Configuring managed preferences for $TARGET_BROWSER ($bundle_id)..."
+        echo "Adding missing extensions to managed policy for $TARGET_BROWSER ($bundle_id)..."
         POLICY_ITEMS=()
-        for id in "${EXT_IDS[@]}"; do
+        for id in "${MISSING_IDS[@]}"; do
             POLICY_ITEMS+=("${id};${UPDATE_URL}")
         done
-        defaults write "$bundle_id" ExtensionInstallForcelist -array "${POLICY_ITEMS[@]}"
-        echo -e "\033[0;32m [x] Configured $TARGET_BROWSER policy successfully.\033[0m"
+        defaults write "$bundle_id" ExtensionInstallForcelist -array-add "${POLICY_ITEMS[@]}"
+        echo -e "\033[0;32m [x] Configured $TARGET_BROWSER successfully.\033[0m"
     fi
 
 elif [[ "$OS" == "Linux" ]]; then
@@ -130,7 +197,7 @@ elif [[ "$OS" == "Linux" ]]; then
     dir="${LINUX_DIRS[$TARGET_BROWSER]}"
 
     if [[ "$OPEN_TABS" == true ]]; then
-        for url in "${EXT_URLS[@]}"; do
+        for url in "${MISSING_URLS[@]}"; do
             xdg-open "$url" >/dev/null 2>&1 || true
         done
         echo -e "\033[0;32mTabs opened via xdg-open!\033[0m"
@@ -139,7 +206,7 @@ elif [[ "$OS" == "Linux" ]]; then
 
     echo "Configuring managed policy for $TARGET_BROWSER in $dir..."
     JSON_ENTRIES=()
-    for id in "${EXT_IDS[@]}"; do
+    for id in "${MISSING_IDS[@]}"; do
         JSON_ENTRIES+=("\"${id};${UPDATE_URL}\"")
     done
     JOINED_ENTRIES=$(IFS=,; echo "${JSON_ENTRIES[*]}")
@@ -158,4 +225,4 @@ elif [[ "$OS" == "Linux" ]]; then
     echo -e "\033[0;32m [x] Configured $TARGET_BROWSER policy in ${dir}/extensions.json\033[0m"
 fi
 
-echo -e "\n\033[0;32m[SUCCESS] Done! Next time you launch $TARGET_BROWSER, all extensions will auto-install.\033[0m"
+echo -e "\n\033[0;32m[SUCCESS] Done! Restart $TARGET_BROWSER to auto-download the missing extensions.\033[0m"

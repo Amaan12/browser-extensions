@@ -1,17 +1,17 @@
 <#
 .SYNOPSIS
-    Installs extensions into a specified browser (Brave, Chrome, Edge, Vivaldi, Opera).
+    Smart additive extension installer for Brave, Chrome, Edge, Vivaldi, Opera.
 .DESCRIPTION
-    Reads extensions from extensions.json and configures the selected browser's
-    ExtensionInstallForcelist policy so the browser automatically installs them.
-
-    Can be specified via -Browser parameter, or chosen from an interactive prompt.
+    Compares extensions.json with the extensions ALREADY installed in your browser.
+    - If an extension is already present, it is SKIPPED.
+    - Only MISSING extensions are installed.
+    - Never deletes or touches any of your existing extensions or browser data.
 .EXAMPLE
     .\install.ps1 -Browser Brave
 .EXAMPLE
     .\install.ps1 -Browser Chrome
 .EXAMPLE
-    .\install.ps1 (interactively prompts which browser to use)
+    .\install.ps1 -Browser Brave -OpenTabs
 #>
 
 [CmdletBinding()]
@@ -22,57 +22,61 @@ param(
     # Path to local JSON file or remote URL
     [string]$Source = "",
 
-    # Open extension store pages in browser tabs instead of setting policies
+    # Only open store pages in tabs for the missing extensions
     [switch]$OpenTabs
 )
 
 $ErrorActionPreference = "Stop"
 
-# Configuration: Supported browsers & registry policy paths
 $SupportedBrowsers = [ordered]@{
     "Brave"   = @{
-        Name       = "Brave"
-        AppId      = "brave.exe"
-        PolicyPath = "Software\Policies\BraveSoftware\Brave\ExtensionInstallForcelist"
-        FallbackPaths = @(
+        Name        = "Brave"
+        AppId       = "brave.exe"
+        PolicyPath  = "Software\Policies\BraveSoftware\Brave\ExtensionInstallForcelist"
+        ProfilePath = "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\User Data\Default"
+        FallbackExe = @(
             "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe",
             "${env:ProgramFiles(x86)}\BraveSoftware\Brave-Browser\Application\brave.exe",
             "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\Application\brave.exe"
         )
     }
     "Chrome"  = @{
-        Name       = "Google Chrome"
-        AppId      = "chrome.exe"
-        PolicyPath = "Software\Policies\Google\Chrome\ExtensionInstallForcelist"
-        FallbackPaths = @(
+        Name        = "Google Chrome"
+        AppId       = "chrome.exe"
+        PolicyPath  = "Software\Policies\Google\Chrome\ExtensionInstallForcelist"
+        ProfilePath = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default"
+        FallbackExe = @(
             "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
             "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
             "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
         )
     }
     "Edge"    = @{
-        Name       = "Microsoft Edge"
-        AppId      = "msedge.exe"
-        PolicyPath = "Software\Policies\Microsoft\Edge\ExtensionInstallForcelist"
-        FallbackPaths = @(
+        Name        = "Microsoft Edge"
+        AppId       = "msedge.exe"
+        PolicyPath  = "Software\Policies\Microsoft\Edge\ExtensionInstallForcelist"
+        ProfilePath = "$env:LOCALAPPDATA\Microsoft\Edge\User Data\Default"
+        FallbackExe = @(
             "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
             "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
         )
     }
     "Vivaldi" = @{
-        Name       = "Vivaldi"
-        AppId      = "vivaldi.exe"
-        PolicyPath = "Software\Policies\Vivaldi\ExtensionInstallForcelist"
-        FallbackPaths = @(
+        Name        = "Vivaldi"
+        AppId       = "vivaldi.exe"
+        PolicyPath  = "Software\Policies\Vivaldi\ExtensionInstallForcelist"
+        ProfilePath = "$env:LOCALAPPDATA\Vivaldi\User Data\Default"
+        FallbackExe = @(
             "$env:LOCALAPPDATA\Vivaldi\Application\vivaldi.exe",
             "$env:ProgramFiles\Vivaldi\Application\vivaldi.exe"
         )
     }
     "Opera"   = @{
-        Name       = "Opera"
-        AppId      = "launcher.exe"
-        PolicyPath = "Software\Policies\Opera Software\ExtensionInstallForcelist"
-        FallbackPaths = @(
+        Name        = "Opera"
+        AppId       = "launcher.exe"
+        PolicyPath  = "Software\Policies\Opera Software\ExtensionInstallForcelist"
+        ProfilePath = "$env:APPDATA\Opera Software\Opera Stable"
+        FallbackExe = @(
             "$env:LOCALAPPDATA\Programs\Opera\launcher.exe",
             "$env:ProgramFiles\Opera\launcher.exe"
         )
@@ -90,7 +94,7 @@ function Find-BrowserExe($config) {
             if ($val -and (Test-Path $val)) { return $val }
         }
     }
-    foreach ($p in $config.FallbackPaths) {
+    foreach ($p in $config.FallbackExe) {
         if ($p -and (Test-Path $p)) { return $p }
     }
     return $null
@@ -115,7 +119,9 @@ foreach ($key in $SupportedBrowsers.Keys) {
 $target = $null
 
 if (-not [string]::IsNullOrWhiteSpace($Browser)) {
-    # Browser specified via parameter
+    if (-not $SupportedBrowsers.Contains($Browser)) {
+        Write-Error "Unsupported browser '$Browser'. Supported: $($SupportedBrowsers.Keys -join ', ')"
+    }
     $cfg = $SupportedBrowsers[$Browser]
     $exe = Find-BrowserExe $cfg
     $target = [PSCustomObject]@{
@@ -125,7 +131,6 @@ if (-not [string]::IsNullOrWhiteSpace($Browser)) {
         Config = $cfg
     }
 } else {
-    # Interactive selection
     if ($detected.Count -eq 0) {
         Write-Error "No supported Chromium browser found on this PC."
     }
@@ -147,12 +152,12 @@ if (-not [string]::IsNullOrWhiteSpace($Browser)) {
 
 Write-Host "`nTarget Browser: $($target.Name)" -ForegroundColor Green
 
-# --- 3. Load Extension List ---
+# --- 3. Load Extension List from JSON ---
 $extensions = @()
 
 if (-not [string]::IsNullOrWhiteSpace($Source)) {
     if ($Source -match '^https?://') {
-        Write-Host "Fetching extensions from remote URL: $Source" -ForegroundColor Cyan
+        Write-Host "Fetching extensions from: $Source" -ForegroundColor Cyan
         $extensions = Invoke-RestMethod -Uri $Source
     } else {
         $extensions = Get-Content $Source -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -162,7 +167,7 @@ if (-not [string]::IsNullOrWhiteSpace($Source)) {
     $localJson = Join-Path $scriptDir "extensions.json"
 
     if (Test-Path $localJson) {
-        Write-Host "Loading extensions from local file: $localJson" -ForegroundColor Cyan
+        Write-Host "Loading list from: $localJson" -ForegroundColor Cyan
         $extensions = Get-Content $localJson -Raw -Encoding UTF8 | ConvertFrom-Json
     } else {
         Write-Host "Local extensions.json not found." -ForegroundColor Yellow
@@ -183,26 +188,78 @@ if (-not $extensions -or $extensions.Count -eq 0) {
     Write-Error "No extensions found in list."
 }
 
-Write-Host "Loaded $($extensions.Count) extensions to install." -ForegroundColor Green
+# --- 4. Smart Check: Find what is ALREADY installed in the target browser ---
+$installedIds = @()
 
-# --- 4. Install Mode: Open Tabs vs Policy Install ---
+# Check Secure Preferences or Preferences file
+$prefFiles = @(
+    (Join-Path $target.Config.ProfilePath "Secure Preferences"),
+    (Join-Path $target.Config.ProfilePath "Preferences")
+)
+foreach ($pf in $prefFiles) {
+    if (Test-Path $pf) {
+        try {
+            $json = Get-Content $pf -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($json.extensions -and $json.extensions.settings) {
+                $installedIds += @($json.extensions.settings.PSObject.Properties.Name)
+            }
+        } catch { }
+    }
+}
+
+# Also check Extensions directory on disk
+$extDir = Join-Path $target.Config.ProfilePath "Extensions"
+if (Test-Path $extDir) {
+    $dirs = Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+    if ($dirs) { $installedIds += $dirs }
+}
+
+$installedIds = $installedIds | Select-Object -Unique
+
+# Separate already-installed vs missing
+$missing = @()
+$alreadyPresent = @()
+
+foreach ($ext in $extensions) {
+    if ($installedIds -contains $ext.id) {
+        $alreadyPresent += $ext
+    } else {
+        $missing += $ext
+    }
+}
+
+# Display status
+if ($alreadyPresent.Count -gt 0) {
+    Write-Host "`n[SKIPPED] Already installed in $($target.Name) ($($alreadyPresent.Count)):" -ForegroundColor DarkGray
+    $alreadyPresent | ForEach-Object { Write-Host "  - $($_.name)" -ForegroundColor DarkGray }
+}
+
+if ($missing.Count -eq 0) {
+    Write-Host "`n[ALL SET] All $($extensions.Count) extensions are already installed in $($target.Name)!" -ForegroundColor Green
+    Write-Host "Nothing needs to be installed." -ForegroundColor Green
+    return
+}
+
+Write-Host "`n[TO INSTALL] Missing extensions ($($missing.Count)):" -ForegroundColor Cyan
+$missing | ForEach-Object { Write-Host "  + $($_.name) ($($_.id))" -ForegroundColor Green }
+Write-Host ""
+
+# --- 5. Install ONLY the Missing Extensions ---
 if ($OpenTabs) {
     if (-not $target.Exe) {
         Write-Error "$($target.Name) executable could not be found."
     }
-    Write-Host "Opening $($extensions.Count) tabs in $($target.Name)..." -ForegroundColor Cyan
-    $urls = $extensions | ForEach-Object { $_.url }
+    Write-Host "Opening $($missing.Count) missing store tabs in $($target.Name)..." -ForegroundColor Cyan
+    $urls = $missing | ForEach-Object { $_.url }
     Start-Process -FilePath $target.Exe -ArgumentList $urls
-    Write-Host "Tabs opened! Click 'Add to $($target.Name)' on each tab." -ForegroundColor Green
+    Write-Host "Tabs opened! Just click 'Add to $($target.Name)' on each tab." -ForegroundColor Green
     return
 }
 
-# Policy Mode: Configure ExtensionInstallForcelist for the chosen browser only
+# Policy Mode: Add missing extensions to registry list
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 $hives = if ($isAdmin) { @("HKLM", "HKCU") } else { @("HKCU") }
 $updateUrl = "https://clients2.google.com/service/update2/crx"
-
-Write-Host "Configuring auto-install policy for $($target.Name)..." -ForegroundColor Cyan
 
 foreach ($hive in $hives) {
     $regPath = "$hive`:\$($target.Config.PolicyPath)"
@@ -210,13 +267,24 @@ foreach ($hive in $hives) {
         New-Item -Path $regPath -Force | Out-Null
     }
 
-    $i = 1
-    foreach ($ext in $extensions) {
-        $val = "$($ext.id);$updateUrl"
-        New-ItemProperty -Path $regPath -Name "$i" -Value $val -PropertyType String -Force | Out-Null
-        $i++
+    # Find the next available index in the registry key
+    $existingProps = (Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue).PSObject.Properties |
+                     Where-Object { $_.Name -match '^\d+$' } |
+                     Select-Object -ExpandProperty Name
+    
+    $maxIndex = 0
+    foreach ($p in $existingProps) {
+        $val = [int]$p
+        if ($val -gt $maxIndex) { $maxIndex = $val }
+    }
+
+    # Only append the missing ones
+    foreach ($ext in $missing) {
+        $maxIndex++
+        $entryVal = "$($ext.id);$updateUrl"
+        New-ItemProperty -Path $regPath -Name "$maxIndex" -Value $entryVal -PropertyType String -Force | Out-Null
     }
 }
 
-Write-Host "`n[SUCCESS] Successfully configured $($extensions.Count) extensions for $($target.Name)!" -ForegroundColor Green
-Write-Host "When you open $($target.Name), the extensions will automatically download and activate." -ForegroundColor Yellow
+Write-Host "[SUCCESS] Added $($missing.Count) missing extensions to $($target.Name)!" -ForegroundColor Green
+Write-Host "When you launch $($target.Name), the missing extensions will automatically download." -ForegroundColor Yellow
