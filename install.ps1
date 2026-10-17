@@ -1,24 +1,23 @@
 <#
 .SYNOPSIS
-    Universal Browser Extension Auto-Installer for Windows (Brave, Chrome, Edge, Vivaldi, Opera, Arc).
+    Installs extensions into a specified browser (Brave, Chrome, Edge, Vivaldi, Opera).
 .DESCRIPTION
-    Reads extensions from extensions.json (locally or fetched from GitHub) and automatically
-    configures extension policies so all detected browsers silently download and install them.
+    Reads extensions from extensions.json and configures the selected browser's
+    ExtensionInstallForcelist policy so the browser automatically installs them.
 
-    Works locally or via one-liner:
-    irm https://raw.githubusercontent.com/<YOUR_USER>/<YOUR_REPO>/main/install.ps1 | iex
-.EXAMPLE
-    .\install.ps1
+    Can be specified via -Browser parameter, or chosen from an interactive prompt.
 .EXAMPLE
     .\install.ps1 -Browser Brave
 .EXAMPLE
-    .\install.ps1 -OpenTabs
+    .\install.ps1 -Browser Chrome
+.EXAMPLE
+    .\install.ps1 (interactively prompts which browser to use)
 #>
 
 [CmdletBinding()]
 param(
-    # "All", "Brave", "Chrome", "Edge", "Vivaldi", "Opera"
-    [string]$Browser = "All",
+    [ValidateSet("Brave", "Chrome", "Edge", "Vivaldi", "Opera", "")]
+    [string]$Browser = "",
 
     # Path to local JSON file or remote URL
     [string]$Source = "",
@@ -29,8 +28,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Configuration: Supported browsers & their registry policy paths
-$SupportedBrowsers = @{
+# Configuration: Supported browsers & registry policy paths
+$SupportedBrowsers = [ordered]@{
     "Brave"   = @{
         Name       = "Brave"
         AppId      = "brave.exe"
@@ -81,7 +80,6 @@ $SupportedBrowsers = @{
 }
 
 function Find-BrowserExe($config) {
-    # 1. Check Windows registered App Paths
     $regPaths = @(
         "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$($config.AppId)",
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\$($config.AppId)"
@@ -92,14 +90,64 @@ function Find-BrowserExe($config) {
             if ($val -and (Test-Path $val)) { return $val }
         }
     }
-    # 2. Check fallback standard paths
     foreach ($p in $config.FallbackPaths) {
         if ($p -and (Test-Path $p)) { return $p }
     }
     return $null
 }
 
-# --- 1. Load Extension List ---
+# --- 1. Detect Installed Browsers on this PC ---
+$detected = @()
+foreach ($key in $SupportedBrowsers.Keys) {
+    $cfg = $SupportedBrowsers[$key]
+    $exe = Find-BrowserExe $cfg
+    if ($exe) {
+        $detected += [PSCustomObject]@{
+            Key    = $key
+            Name   = $cfg.Name
+            Exe    = $exe
+            Config = $cfg
+        }
+    }
+}
+
+# --- 2. Resolve Single Target Browser ---
+$target = $null
+
+if (-not [string]::IsNullOrWhiteSpace($Browser)) {
+    # Browser specified via parameter
+    $cfg = $SupportedBrowsers[$Browser]
+    $exe = Find-BrowserExe $cfg
+    $target = [PSCustomObject]@{
+        Key    = $Browser
+        Name   = $cfg.Name
+        Exe    = $exe
+        Config = $cfg
+    }
+} else {
+    # Interactive selection
+    if ($detected.Count -eq 0) {
+        Write-Error "No supported Chromium browser found on this PC."
+    }
+
+    Write-Host "`nChoose which browser to install extensions into:" -ForegroundColor Cyan
+    for ($i = 0; $i -lt $detected.Count; $i++) {
+        Write-Host "  [$($i + 1)] $($detected[$i].Name)"
+    }
+    $choice = Read-Host "`nEnter selection [1-$($detected.Count)] (default: 1)"
+    $idx = 0
+    if (-not [string]::IsNullOrWhiteSpace($choice)) {
+        $idx = [int]$choice - 1
+    }
+    if ($idx -lt 0 -or $idx -ge $detected.Count) {
+        Write-Error "Invalid selection."
+    }
+    $target = $detected[$idx]
+}
+
+Write-Host "`nTarget Browser: $($target.Name)" -ForegroundColor Green
+
+# --- 3. Load Extension List ---
 $extensions = @()
 
 if (-not [string]::IsNullOrWhiteSpace($Source)) {
@@ -117,8 +165,8 @@ if (-not [string]::IsNullOrWhiteSpace($Source)) {
         Write-Host "Loading extensions from local file: $localJson" -ForegroundColor Cyan
         $extensions = Get-Content $localJson -Raw -Encoding UTF8 | ConvertFrom-Json
     } else {
-        Write-Host "Local extensions.json not found (running in remote memory mode)." -ForegroundColor Yellow
-        $user = Read-Host "Enter your GitHub username (or full raw URL to extensions.json)"
+        Write-Host "Local extensions.json not found." -ForegroundColor Yellow
+        $user = Read-Host "Enter your GitHub username (or raw URL to extensions.json)"
         if ($user -match '^https?://') {
             $extensions = Invoke-RestMethod -Uri $user
         } else {
@@ -135,86 +183,40 @@ if (-not $extensions -or $extensions.Count -eq 0) {
     Write-Error "No extensions found in list."
 }
 
-Write-Host "`nExtensions to install ($($extensions.Count)):" -ForegroundColor Green
-$extensions | ForEach-Object { Write-Host " - $($_.name) ($($_.id))" }
-Write-Host ""
+Write-Host "Loaded $($extensions.Count) extensions to install." -ForegroundColor Green
 
-# --- 2. Detect Installed Browsers on this PC ---
-Write-Host "Scanning PC for installed browsers..." -ForegroundColor Cyan
-$detectedBrowsers = @{}
-
-foreach ($key in $SupportedBrowsers.Keys) {
-    $cfg = $SupportedBrowsers[$key]
-    $exe = Find-BrowserExe $cfg
-    if ($exe) {
-        $detectedBrowsers[$key] = @{
-            Config = $cfg
-            Exe    = $exe
-        }
-        Write-Host " [x] Detected $($cfg.Name) at $exe" -ForegroundColor Green
-    }
-}
-
-if ($detectedBrowsers.Count -eq 0) {
-    Write-Warning "No supported Chromium browsers detected on this PC."
-}
-
-# Determine target browsers
-$targets = @()
-if ($Browser -eq "All") {
-    $targets = $detectedBrowsers.Keys
-} else {
-    if ($SupportedBrowsers.ContainsKey($Browser)) {
-        $targets = @($Browser)
-    } else {
-        Write-Error "Unsupported browser: $Browser. Supported: $($SupportedBrowsers.Keys -join ', ')"
-    }
-}
-
-# --- 3. Execute Installation ---
+# --- 4. Install Mode: Open Tabs vs Policy Install ---
 if ($OpenTabs) {
-    foreach ($b in $targets) {
-        $exe = if ($detectedBrowsers.ContainsKey($b)) { $detectedBrowsers[$b].Exe } else { Find-BrowserExe $SupportedBrowsers[$b] }
-        if ($exe) {
-            Write-Host "Opening $($extensions.Count) tabs in $b..." -ForegroundColor Cyan
-            $urls = $extensions | ForEach-Object { $_.url }
-            Start-Process -FilePath $exe -ArgumentList $urls
-        } else {
-            Write-Warning "Cannot open tabs: $b executable not found."
-        }
+    if (-not $target.Exe) {
+        Write-Error "$($target.Name) executable could not be found."
     }
-    Write-Host "`nTabs opened! Click 'Add to browser' on each page." -ForegroundColor Green
+    Write-Host "Opening $($extensions.Count) tabs in $($target.Name)..." -ForegroundColor Cyan
+    $urls = $extensions | ForEach-Object { $_.url }
+    Start-Process -FilePath $target.Exe -ArgumentList $urls
+    Write-Host "Tabs opened! Click 'Add to $($target.Name)' on each tab." -ForegroundColor Green
     return
 }
 
-# Automated Force-Install Policy Mode
+# Policy Mode: Configure ExtensionInstallForcelist for the chosen browser only
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 $hives = if ($isAdmin) { @("HKLM", "HKCU") } else { @("HKCU") }
 $updateUrl = "https://clients2.google.com/service/update2/crx"
 
-foreach ($b in $targets) {
-    $cfg = $SupportedBrowsers[$b]
-    Write-Host "`nConfiguring auto-install policy for $($cfg.Name)..." -ForegroundColor Cyan
+Write-Host "Configuring auto-install policy for $($target.Name)..." -ForegroundColor Cyan
 
-    foreach ($hive in $hives) {
-        $regPath = "$hive`:\$($cfg.PolicyPath)"
-        if (-not (Test-Path $regPath)) {
-            New-Item -Path $regPath -Force | Out-Null
-        }
-
-        $i = 1
-        foreach ($ext in $extensions) {
-            $val = "$($ext.id);$updateUrl"
-            New-ItemProperty -Path $regPath -Name "$i" -Value $val -PropertyType String -Force | Out-Null
-            $i++
-        }
+foreach ($hive in $hives) {
+    $regPath = "$hive`:\$($target.Config.PolicyPath)"
+    if (-not (Test-Path $regPath)) {
+        New-Item -Path $regPath -Force | Out-Null
     }
-    Write-Host " [x] Successfully configured $($cfg.Name)" -ForegroundColor Green
+
+    $i = 1
+    foreach ($ext in $extensions) {
+        $val = "$($ext.id);$updateUrl"
+        New-ItemProperty -Path $regPath -Name "$i" -Value $val -PropertyType String -Force | Out-Null
+        $i++
+    }
 }
 
-Write-Host "`n[SUCCESS] Completed! All extensions are set to auto-install." -ForegroundColor Green
-Write-Host "They will automatically download and activate when you launch the browser(s)." -ForegroundColor Yellow
-
-if (-not $isAdmin) {
-    Write-Host "Note: Applied to Current User (HKCU). For system-wide policies, run as Administrator." -ForegroundColor DarkGray
-}
+Write-Host "`n[SUCCESS] Successfully configured $($extensions.Count) extensions for $($target.Name)!" -ForegroundColor Green
+Write-Host "When you open $($target.Name), the extensions will automatically download and activate." -ForegroundColor Yellow

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Universal Browser Extension Installer for macOS and Linux
-# Supports: Brave, Google Chrome, Microsoft Edge, Chromium, Vivaldi
+# Installs extensions into a single chosen browser (Brave, Chrome, Edge, Chromium, Vivaldi)
 
 set -e
 
@@ -8,7 +8,7 @@ OS="$(uname -s)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || pwd)" && pwd)"
 JSON_FILE="${SCRIPT_DIR}/extensions.json"
 OPEN_TABS=false
-TARGET_BROWSER="all"
+TARGET_BROWSER=""
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
@@ -19,15 +19,45 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-# 1. Resolve Extension Data
+# --- 1. Select Browser ---
+SUPPORTED=("Brave" "Chrome" "Edge" "Chromium" "Vivaldi")
+
+if [[ -z "$TARGET_BROWSER" ]]; then
+    echo -e "\033[0;36mChoose which browser to install extensions into:\033[0m"
+    for i in "${!SUPPORTED[@]}"; do
+        echo "  [$((i + 1))] ${SUPPORTED[$i]}"
+    done
+    read -rp "Enter selection [1-${#SUPPORTED[@]}] (default: 1): " CHOICE
+    CHOICE=${CHOICE:-1}
+    IDX=$((CHOICE - 1))
+    TARGET_BROWSER="${SUPPORTED[$IDX]}"
+fi
+
+# Normalize case
+MATCHED=""
+for b in "${SUPPORTED[@]}"; do
+    if [[ "${b,,}" == "${TARGET_BROWSER,,}" ]]; then
+        MATCHED="$b"
+        break
+    fi
+done
+
+if [[ -z "$MATCHED" ]]; then
+    echo "Error: Unsupported browser '$TARGET_BROWSER'. Supported: ${SUPPORTED[*]}"
+    exit 1
+fi
+TARGET_BROWSER="$MATCHED"
+echo -e "\033[0;32mTarget Browser: $TARGET_BROWSER\033[0m\n"
+
+# --- 2. Resolve Extension Data ---
 if [[ -f "$JSON_FILE" ]]; then
     EXT_DATA=$(cat "$JSON_FILE")
 elif [[ "$JSON_FILE" =~ ^https?:// ]]; then
     echo -e "\033[0;36mFetching extensions from $JSON_FILE...\033[0m"
     EXT_DATA=$(curl -fsSL "$JSON_FILE")
 else
-    echo -e "\033[0;33mLocal extensions.json not found (remote stream mode).\033[0m"
-    read -rp "Enter your GitHub username (or full raw URL to extensions.json): " USER_INPUT
+    echo -e "\033[0;33mLocal extensions.json not found.\033[0m"
+    read -rp "Enter your GitHub username (or raw URL to extensions.json): " USER_INPUT
     if [[ "$USER_INPUT" =~ ^https?:// ]]; then
         EXT_DATA=$(curl -fsSL "$USER_INPUT")
     else
@@ -39,7 +69,6 @@ else
     fi
 fi
 
-# Extract IDs and URLs using python3, jq, or grep/sed
 EXT_IDS=()
 EXT_NAMES=()
 EXT_URLS=()
@@ -56,25 +85,18 @@ for item in data:
     print(f\"{item.get('id', '')}|{item.get('name', '')}|{item.get('url', '')}\")
 ")
 else
-    # Fallback extractor if python3 is not present
     while IFS= read -r line; do
         id=$(echo "$line" | sed -n 's/.*"id": *"\([^"]*\)".*/\1/p')
         [[ -n "$id" ]] && EXT_IDS+=("$id")
     done <<< "$EXT_DATA"
 fi
 
-echo -e "\033[0;32mLoaded ${#EXT_IDS[@]} extensions:\033[0m"
-for i in "${!EXT_IDS[@]}"; do
-    echo " - ${EXT_NAMES[$i]:-Extension} (${EXT_IDS[$i]})"
-done
-echo ""
+echo -e "\033[0;32mLoaded ${#EXT_IDS[@]} extensions to install.\033[0m"
 
 UPDATE_URL="https://clients2.google.com/service/update2/crx"
 
-# --- macOS Handler ---
+# --- 3. Execute Installation for Selected Browser ---
 if [[ "$OS" == "Darwin" ]]; then
-    echo -e "\033[0;36mRunning on macOS...\033[0m"
-
     declare -A MAC_BUNDLES=(
         ["Brave"]="com.brave.Browser"
         ["Chrome"]="com.google.Chrome"
@@ -82,32 +104,22 @@ if [[ "$OS" == "Darwin" ]]; then
         ["Chromium"]="org.chromium.Chromium"
         ["Vivaldi"]="com.vivaldi.Vivaldi"
     )
+    bundle_id="${MAC_BUNDLES[$TARGET_BROWSER]}"
 
-    for b in "${!MAC_BUNDLES[@]}"; do
-        if [[ "$TARGET_BROWSER" != "all" && "${TARGET_BROWSER,,}" != "${b,,}" ]]; then
-            continue
-        fi
+    if [[ "$OPEN_TABS" == true ]]; then
+        echo "Opening tabs in $TARGET_BROWSER..."
+        open -a "$TARGET_BROWSER" "${EXT_URLS[@]}" || true
+    else
+        echo "Configuring managed preferences for $TARGET_BROWSER ($bundle_id)..."
+        POLICY_ITEMS=()
+        for id in "${EXT_IDS[@]}"; do
+            POLICY_ITEMS+=("${id};${UPDATE_URL}")
+        done
+        defaults write "$bundle_id" ExtensionInstallForcelist -array "${POLICY_ITEMS[@]}"
+        echo -e "\033[0;32m [x] Configured $TARGET_BROWSER policy successfully.\033[0m"
+    fi
 
-        bundle_id="${MAC_BUNDLES[$b]}"
-        if [[ "$OPEN_TABS" == true ]]; then
-            echo "Opening tabs in $b..."
-            open -a "$b" "${EXT_URLS[@]}" || true
-        else
-            echo "Configuring managed preferences for $b ($bundle_id)..."
-            # Build array of id;update_url
-            POLICY_ITEMS=()
-            for id in "${EXT_IDS[@]}"; do
-                POLICY_ITEMS+=("${id};${UPDATE_URL}")
-            done
-            defaults write "$bundle_id" ExtensionInstallForcelist -array "${POLICY_ITEMS[@]}"
-            echo -e "\033[0;32m [x] Configured $b policy successfully.\033[0m"
-        fi
-    done
-
-# --- Linux Handler ---
 elif [[ "$OS" == "Linux" ]]; then
-    echo -e "\033[0;36mRunning on Linux...\033[0m"
-
     declare -A LINUX_DIRS=(
         ["Brave"]="/etc/brave/policies/managed"
         ["Chrome"]="/etc/opt/chrome/policies/managed"
@@ -115,6 +127,7 @@ elif [[ "$OS" == "Linux" ]]; then
         ["Chromium"]="/etc/chromium/policies/managed"
         ["Vivaldi"]="/etc/vivaldi/policies/managed"
     )
+    dir="${LINUX_DIRS[$TARGET_BROWSER]}"
 
     if [[ "$OPEN_TABS" == true ]]; then
         for url in "${EXT_URLS[@]}"; do
@@ -124,35 +137,25 @@ elif [[ "$OS" == "Linux" ]]; then
         exit 0
     fi
 
-    for b in "${!LINUX_DIRS[@]}"; do
-        if [[ "$TARGET_BROWSER" != "all" && "${TARGET_BROWSER,,}" != "${b,,}" ]]; then
-            continue
-        fi
-
-        dir="${LINUX_DIRS[$b]}"
-        echo "Creating managed policy for $b in $dir..."
-
-        # Format JSON policy
-        JSON_ENTRIES=()
-        for id in "${EXT_IDS[@]}"; do
-            JSON_ENTRIES+=("\"${id};${UPDATE_URL}\"")
-        done
-        JOINED_ENTRIES=$(IFS=,; echo "${JSON_ENTRIES[*]}")
-        POLICY_JSON="{\"ExtensionInstallForcelist\": [${JOINED_ENTRIES}]}"
-
-        if [[ "$EUID" -eq 0 ]]; then
-            mkdir -p "$dir"
-            echo "$POLICY_JSON" > "${dir}/extensions.json"
-        elif command -v sudo >/dev/null 2>&1; then
-            sudo mkdir -p "$dir"
-            echo "$POLICY_JSON" | sudo tee "${dir}/extensions.json" >/dev/null
-        else
-            echo "Skipping $b: root/sudo permissions needed to write to $dir"
-            continue
-        fi
-
-        echo -e "\033[0;32m [x] Configured $b policy successfully in ${dir}/extensions.json\033[0m"
+    echo "Configuring managed policy for $TARGET_BROWSER in $dir..."
+    JSON_ENTRIES=()
+    for id in "${EXT_IDS[@]}"; do
+        JSON_ENTRIES+=("\"${id};${UPDATE_URL}\"")
     done
+    JOINED_ENTRIES=$(IFS=,; echo "${JSON_ENTRIES[*]}")
+    POLICY_JSON="{\"ExtensionInstallForcelist\": [${JOINED_ENTRIES}]}"
+
+    if [[ "$EUID" -eq 0 ]]; then
+        mkdir -p "$dir"
+        echo "$POLICY_JSON" > "${dir}/extensions.json"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo mkdir -p "$dir"
+        echo "$POLICY_JSON" | sudo tee "${dir}/extensions.json" >/dev/null
+    else
+        echo "Error: root/sudo permissions needed to write to $dir"
+        exit 1
+    fi
+    echo -e "\033[0;32m [x] Configured $TARGET_BROWSER policy in ${dir}/extensions.json\033[0m"
 fi
 
-echo -e "\n\033[0;32m[SUCCESS] Done! Restart your browser to auto-install all extensions.\033[0m"
+echo -e "\n\033[0;32m[SUCCESS] Done! Next time you launch $TARGET_BROWSER, all extensions will auto-install.\033[0m"

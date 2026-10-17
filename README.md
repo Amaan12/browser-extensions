@@ -1,51 +1,69 @@
 # 🌐 Universal Browser Extension Sync & Auto-Installer
 
-Automate exporting and installing your browser extensions on **any PC** (Windows, macOS, Linux) and **any Chromium browser** (Brave, Google Chrome, Microsoft Edge, Vivaldi, Opera) with a single terminal command.
+Automate exporting and installing your browser extensions on **any PC** (Windows, macOS, Linux) into **a specific browser of your choice** (Brave, Google Chrome, Microsoft Edge, Vivaldi, or Opera).
 
-Your 16 current extensions are already exported and saved in [`extensions.json`](extensions.json).
+Your 16 current extensions are saved in [`extensions.json`](extensions.json).
 
 ---
 
-## ⚡ Quick Start: 1-Command Install on a New PC
+## ⚡ 1-Command Installation on a New PC
 
-### 🪟 On Any Windows PC (PowerShell)
-Run this single command in PowerShell:
+You can specify the target browser directly in your terminal command:
 
+### 🪟 Windows (PowerShell)
+
+**Specify the browser directly:**
 ```powershell
-irm https://raw.githubusercontent.com/<YOUR_GITHUB_USER>/<REPO>/main/install.ps1 | iex
+# For Brave:
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Brave
+
+# For Chrome:
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Chrome
+
+# For Edge:
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1))) -Browser Edge
 ```
 
-*Or if you clone the repo:*
+**Or run interactively (it will ask you to choose 1 browser):**
 ```powershell
-git clone https://github.com/<YOUR_GITHUB_USER>/<REPO>.git
-cd <REPO>
-.\install.ps1
-```
-
-### 🍎 On macOS or 🐧 Linux (Terminal)
-Run this single command in Terminal:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/<YOUR_GITHUB_USER>/<REPO>/main/install.sh | bash
-```
-
-*Or if you clone the repo:*
-```bash
-git clone https://github.com/<YOUR_GITHUB_USER>/<REPO>.git
-cd <REPO>
-chmod +x install.sh
-./install.sh
+irm https://raw.githubusercontent.com/<USER>/<REPO>/main/install.ps1 | iex
 ```
 
 ---
 
-## 💡 How It Works
-Chromium browsers (Brave, Chrome, Edge, Vivaldi, Opera) share the same underlying architecture and extension IDs.
+### 🍎 macOS / 🐧 Linux (Terminal)
 
-When you run `install.ps1` (or `install.sh`), it:
-1. **Auto-detects** all installed browsers on that PC.
-2. Applies the `ExtensionInstallForcelist` enterprise policy.
-3. Next time you launch Brave or any other browser, it **automatically, silently downloads and installs all extensions from the Chrome Web Store**.
+**Specify the browser directly:**
+```bash
+# For Brave:
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash -s -- --browser brave
+
+# For Chrome:
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash -s -- --browser chrome
+
+# For Edge:
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash -s -- --browser edge
+```
+
+**Or run interactively (it will ask you to choose 1 browser):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/<USER>/<REPO>/main/install.sh | bash
+```
+
+---
+
+## ❓ What Does "Uninstall" Mean? (How It Works)
+
+### How "Install" works:
+When you run `install.ps1`, it writes the extensions to the browser's **`ExtensionInstallForcelist`** policy (in Windows Registry or Mac/Linux managed policy directories).
+- The browser downloads and installs them silently from the Chrome Web Store.
+- Because it is configured as a policy, the extensions are marked as "managed by your organization" so they cannot be accidentally removed or disabled.
+
+### What "Uninstall" does:
+When you run `uninstall.ps1` (or `uninstall.sh`):
+1. **It removes only that policy key from your system.**
+2. The next time you open that browser, Chromium checks the policy list, sees that those extensions are no longer mandated, and **automatically deletes / uninstalls those extensions from the browser**.
+3. **What is NOT touched:** It will **never** touch your bookmarks, browsing history, saved passwords, cookies, or any other personal browser data.
 
 ---
 
@@ -54,55 +72,49 @@ When you run `install.ps1` (or `install.sh`), it:
 | File | Target OS | Description |
 | :--- | :--- | :--- |
 | [`extensions.json`](extensions.json) | Any | Unified list of extension IDs, names, and Web Store URLs. |
-| [`install.ps1`](install.ps1) | Windows | Auto-detects browsers and installs all extensions silently via registry policy. |
-| [`install.sh`](install.sh) | macOS / Linux | Configures managed policies across macOS / Linux browsers. |
-| [`export.ps1`](export.ps1) | Windows | Scans your browser profiles and updates `extensions.json` when you add new extensions. |
-| [`export.sh`](export.sh) | macOS / Linux | Linux/Mac equivalent to extract extensions into `extensions.json`. |
-| [`uninstall.ps1`](uninstall.ps1) | Windows | Cleans up the policy from Windows Registry if you want manual control back. |
-| [`uninstall.sh`](uninstall.sh) | macOS / Linux | Cleans up the policy files or defaults on macOS/Linux. |
+| [`install.ps1`](install.ps1) | Windows | Installs extensions into a specified browser (or interactive choice). |
+| [`install.sh`](install.sh) | macOS / Linux | Installs extensions into a specified browser on Mac/Linux. |
+| [`export.ps1`](export.ps1) | Windows | Scans your browser profile and updates `extensions.json` when you add new extensions. |
+| [`export.sh`](export.sh) | macOS / Linux | Linux/Mac equivalent to export your extensions. |
+| [`uninstall.ps1`](uninstall.ps1) | Windows | Removes the auto-install policy for a chosen browser, causing the browser to uninstall them. |
+| [`uninstall.sh`](uninstall.sh) | macOS / Linux | Removes managed policy files or defaults on Mac/Linux. |
+| [`README.md`](README.md) | Any | Documentation and usage examples. |
 
 ---
 
-## 🔄 Keeping Your Extensions in Sync
+## 🔄 Keeping Your Extensions Updated
 
-Whenever you add or change extensions in Brave or another browser on your main machine:
+Whenever you install new extensions in your browser and want to sync them:
 
 **On Windows:**
 ```powershell
-.\export.ps1
+.\export.ps1 -Browser Brave
 git commit -am "Update extensions list"
-git push
+# git push (when ready)
 ```
 
 **On Mac/Linux:**
 ```bash
 ./export.sh
 git commit -am "Update extensions list"
-git push
+# git push (when ready)
 ```
 
 ---
 
 ## ⚙️ Advanced CLI Options
 
-### 1. Target a specific browser instead of all detected:
-- **Windows:**
-  ```powershell
-  .\install.ps1 -Browser Brave
-  .\install.ps1 -Browser Chrome
-  .\install.ps1 -Browser Edge
-  ```
-- **Mac / Linux:**
-  ```bash
-  ./install.sh --browser brave
-  ./install.sh --browser chrome
-  ```
+### Interactive vs Explicit in local clone:
+```powershell
+# Prompt interactively:
+.\install.ps1
 
-### 2. Open store pages in tabs instead of enterprise policy:
-If you don't want managed policies and just want tabs opened side-by-side so you can click "Add to browser":
-- **Windows:** `.\install.ps1 -OpenTabs`
-- **Mac / Linux:** `./install.sh --open-tabs`
+# Target a specific browser:
+.\install.ps1 -Browser Brave
 
-### 3. Remove / Reset Policies:
-- **Windows:** `.\uninstall.ps1`
-- **Mac / Linux:** `./uninstall.sh`
+# Open store pages as tabs instead of managed policy:
+.\install.ps1 -Browser Brave -OpenTabs
+
+# Clean up / remove policy for a specific browser:
+.\uninstall.ps1 -Browser Brave
+```
