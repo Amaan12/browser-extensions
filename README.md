@@ -1,66 +1,47 @@
 # 🧩 My Browser Extensions
 
-A curated collection of the browser extensions I use in Brave, with direct links to install them from the Chrome Web Store on any new browser or PC.
+A curated collection of the browser extensions I use in Brave, with direct links to install them from the Chrome Web Store.
 
 ---
 
 ## 🛡️ Ad Blocking & Privacy
 
-| Extension | Chrome Web Store Link | Description |
+| Extension | Link | Description |
 | :--- | :--- | :--- |
-| **AdBlock** | [Install from Web Store](https://chromewebstore.google.com/detail/gighmmpiobklfepjocnamgkkbiglidom) | Block ads and popups across the web |
-| **Blockify** | [Install from Web Store](https://chromewebstore.google.com/detail/nfmlkliedggdodlbgghmmchhgckjoaml) | Ad blocker for Spotify web player, YouTube, and more |
+| **AdBlock** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/gighmmpiobklfepjocnamgkkbiglidom) | Blocks ads, banners, and popups across the web |
+| **Blockify** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/nfmlkliedggdodlbgghmmchhgckjoaml) | Ad blocker for Spotify web player, YouTube, and more |
 
 ---
 
 ## 📺 YouTube Enhancements
 
-| Extension | Chrome Web Store Link | Description |
+| Extension | Link | Description |
 | :--- | :--- | :--- |
-| **Return YouTube Dislike** | [Install from Web Store](https://chromewebstore.google.com/detail/gebbhagfogifgggkldgodflihgfeippi) | Restores the ability to see dislikes on YouTube |
-| **Unhook** | [Install from Web Store](https://chromewebstore.google.com/detail/khncfooichmfjbepaaaebmommgaepoid) | Remove YouTube recommended feed, shorts, and distractions |
-| **YouTube Quality ShortCut** | [Install from Web Store](https://chromewebstore.google.com/detail/idcemhhjdleodchiihagkfehahofmibc) | Fast toggle for YouTube playback quality |
+| **Return YouTube Dislike** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/gebbhagfogifgggkldgodflihgfeippi) | Restores the ability to see dislike counts on YouTube |
+| **Unhook** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/khncfooichmfjbepaaaebmommgaepoid) | Removes YouTube homepage recommendations, shorts, and sidebar distractions |
+| **YouTube Quality ShortCut** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/idcemhhjdleodchiihagkfehahofmibc) | Fast 1-click toggle for video playback quality |
 
 ---
 
 ## 🎵 Media & Audio
 
-| Extension | Chrome Web Store Link | Description |
+| Extension | Link | Description |
 | :--- | :--- | :--- |
-| **Volume Master** | [Install from Web Store](https://chromewebstore.google.com/detail/jghecgabfgfdldnmbfkhmffcabddioke) | Up to 600% volume boost for individual tabs |
-| **Video Speed Controller** | [Install from Web Store](https://chromewebstore.google.com/detail/nffaoalbilbmmfgbnbgppjihopabppdk) | Speed up, slow down, advance and rewind HTML5 videos |
-| **Transpose** | [Install from Web Store](https://chromewebstore.google.com/detail/ioimlbgefgadofblnajllknopjboejda) | Real-time pitch shifter, speed adjuster, and audio looper |
-| **Shazam** | [Install from Web Store](https://chromewebstore.google.com/detail/mmioliijnhnoblpgimnlajmefafdfilb) | Identify any music playing in your browser |
+| **Volume Master** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/jghecgabfgfdldnmbfkhmffcabddioke) | Up to 600% volume boost for individual browser tabs |
+| **Video Speed Controller** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/nffaoalbilbmmfgbnbgppjihopabppdk) | Speed up, slow down, and advance HTML5 videos with keyboard shortcuts |
+| **Transpose** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/ioimlbgefgadofblnajllknopjboejda) | Real-time pitch shifter, speed adjuster, and audio looper |
+| **Shazam** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/mmioliijnhnoblpgimnlajmefafdfilb) | Identify any music or song playing in your browser |
 
 ---
 
 ## 🛠️ Productivity & Utilities
 
-| Extension | Chrome Web Store Link | Description |
+| Extension | Link | Description |
 | :--- | :--- | :--- |
-| **Raindrop.io** | [Install from Web Store](https://chromewebstore.google.com/detail/ldgfbffkinooeloadekpmfoklnobpien) | All-in-one bookmark manager |
-| **GoFullPage** | [Install from Web Store](https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl) | 1-click full page screenshot capture |
-| **Adobe Acrobat** | [Install from Web Store](https://chromewebstore.google.com/detail/efaidnbmnnnibpcajpcglclefindmkaj) | PDF edit, convert, and sign tools |
-| **Save as PDF** | [Install from Web Store](https://chromewebstore.google.com/detail/kpdjmbiefanbdgnkcikhllpmjnnllbbc) | Convert any web page to PDF |
-| **Developer Notes** | [Install from Web Store](https://chromewebstore.google.com/detail/fchdfdnnpkphopmdaochdfnmcahndmnb) | Quick in-browser notes for developers |
-| **Open Link In Another Window** | [Install from Web Store](https://chromewebstore.google.com/detail/oocalbipljegheefhdjlglmimnigimjk) | Forces links to open in a separate window |
-| **SteamDB** | [Install from Web Store](https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon) | Adds pricing history and stats to the Steam Store |
-
----
-
-## ⚡ Quick 1-Click Opener (Optional)
-
-If you're on a fresh PC and want to open all 16 store pages at once in tabs:
-
-- **Windows:** Double-click [`open_all.bat`](open_all.bat) (or run `./open_all.bat` in terminal).
-- **macOS / Linux:** Run `./open_all.sh` in terminal.
-
----
-
-## 🔄 Updating This List
-
-To scan Brave and refresh `extensions.json` whenever you add new extensions:
-
-```powershell
-.\export.ps1
-```
+| **Raindrop.io** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/ldgfbffkinooeloadekpmfoklnobpien) | All-in-one bookmark manager with tagging and cloud sync |
+| **GoFullPage** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/fdpohaocaechififmbbbbbknoalclacl) | 1-click full page scrolling screenshot capture to PNG/PDF |
+| **Adobe Acrobat** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/efaidnbmnnnibpcajpcglclefindmkaj) | PDF viewing, editing, converting, and commenting tools |
+| **Save as PDF** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/kpdjmbiefanbdgnkcikhllpmjnnllbbc) | Clean conversion of web pages directly into PDF documents |
+| **Developer Notes** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/fchdfdnnpkphopmdaochdfnmcahndmnb) | Quick in-browser scratchpad and note-taking tool |
+| **Open Link In Another Window** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/oocalbipljegheefhdjlglmimnigimjk) | Forces designated links to open in a separate window |
+| **SteamDB** | [Install on Web Store ↗](https://chromewebstore.google.com/detail/kdbmhfkmnlmbkgbabkdealhhbfhlmmon) | Adds pricing history, concurrent player stats, and database links to Steam |
